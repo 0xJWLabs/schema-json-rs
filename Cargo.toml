@@ -1,6 +1,3 @@
 [workspace]
-members = [
-    "schemars",
-    "schemars_derive"
-]
+members = ["schema_jsonrs", "schema_jsonrs_derive"]
 resolver = "2"

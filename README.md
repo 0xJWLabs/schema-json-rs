@@ -1,24 +1,16 @@
-# Schemars
+# SchemaJsonRs
 
-> [!NOTE]
-> This branch is for the current v1 alpha version of Schemars which is still under development.
-> For the current stable release of Schemars (v0.8.x), see the [v0 branch](https://github.com/GREsau/schemars/tree/v0).
->
-> For information on migrating from 0.8 to 1.0, see [the migration guide](https://graham.cool/schemars/migrating/).
-
-[![CI Build](https://img.shields.io/github/actions/workflow/status/GREsau/schemars/ci.yml?branch=master&logo=GitHub)](https://github.com/GREsau/schemars/actions)
-[![Crates.io](https://img.shields.io/crates/v/schemars)](https://crates.io/crates/schemars)
-[![Docs](https://img.shields.io/docsrs/schemars/1.0.0--latest?label=docs)](https://docs.rs/schemars/1.0.0--latest)
-[![MSRV 1.70+](https://img.shields.io/badge/msrv-1.70-blue)](https://blog.rust-lang.org/2023/06/01/Rust-1.70.0.html)
+[![Crates.io](https://img.shields.io/crates/v/schema_jsonrs)](https://crates.io/crates/schema_jsonrs)
+[![Docs](https://img.shields.io/docsrs/schema_jsonrs/0.1.0--latest?label=docs)](https://docs.rs/schema_jsonrs/0.1.0--latest)
 
 Generate JSON Schema documents from Rust code
 
 ## Basic Usage
 
-If you don't really care about the specifics, the easiest way to generate a JSON schema for your types is to `#[derive(JsonSchema)]` and use the `schema_for!` macro. All fields of the type must also implement `JsonSchema` - Schemars implements this for many standard library types.
+If you don't really care about the specifics, the easiest way to generate a JSON schema for your types is to `#[derive(JsonSchema)]` and use the `schema_for!` macro. All fields of the type must also implement `JsonSchema` - SchemaJsonRs implements this for many standard library types.
 
 ```rust
-use schemars::{schema_for, JsonSchema};
+use schema_jsonrs::{schema_for, JsonSchema};
 
 #[derive(JsonSchema)]
 pub struct MyStruct {
@@ -34,7 +26,7 @@ pub enum MyEnum {
 }
 
 let schema = schema_for!(MyStruct);
-println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+println!("{}", serde_jsonc2::to_string_pretty(&schema).unwrap());
 ```
 
 <details>
@@ -108,10 +100,10 @@ println!("{}", serde_json::to_string_pretty(&schema).unwrap());
 
 ### Serde Compatibility
 
-One of the main aims of this library is compatibility with [Serde](https://github.com/serde-rs/serde). Any generated schema _should_ match how [serde_json](https://github.com/serde-rs/json) would serialize/deserialize to/from JSON. To support this, Schemars will check for any `#[serde(...)]` attributes on types that derive `JsonSchema`, and adjust the generated schema accordingly.
+One of the main aims of this library is compatibility with [Serde](https://github.com/serde-rs/serde). Any generated schema _should_ match how [serde_jsonc2](https://github.com/0xJWLabs/jsonc) would serialize/deserialize to/from JSON(C). To support this, SchemaJsonRs will check for any `#[serde(...)]` attributes on types that derive `JsonSchema`, and adjust the generated schema accordingly.
 
 ```rust
-use schemars::{schema_for, JsonSchema};
+use schema_jsonrs::{schema_for, JsonSchema};
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, JsonSchema)]
@@ -132,7 +124,7 @@ pub enum MyEnum {
 }
 
 let schema = schema_for!(MyStruct);
-println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+println!("{}", serde_jsonc2::to_string_pretty(&schema).unwrap());
 ```
 
 <details>
@@ -192,14 +184,14 @@ println!("{}", serde_json::to_string_pretty(&schema).unwrap());
 
 </details>
 
-`#[serde(...)]` attributes can be overriden using `#[schemars(...)]` attributes, which behave identically (e.g. `#[schemars(rename_all = "camelCase")]`). You may find this useful if you want to change the generated schema without affecting Serde's behaviour, or if you're just not using Serde.
+`#[serde(...)]` attributes can be overriden using `#[schema_jsonrs(...)]` attributes, which behave identically (e.g. `#[schema_jsonrs(rename_all = "camelCase")]`). You may find this useful if you want to change the generated schema without affecting Serde's behaviour, or if you're just not using Serde.
 
 ### Schema from Example Value
 
-If you want a schema for a type that can't/doesn't implement `JsonSchema`, but does implement `serde::Serialize`, then you can generate a JSON schema from a value of that type. However, this schema will generally be less precise than if the type implemented `JsonSchema` - particularly when it involves enums, since schemars will not make any assumptions about the structure of an enum based on a single variant.
+If you want a schema for a type that can't/doesn't implement `JsonSchema`, but does implement `serde::Serialize`, then you can generate a JSON schema from a value of that type. However, this schema will generally be less precise than if the type implemented `JsonSchema` - particularly when it involves enums, since schema_jsonrs will not make any assumptions about the structure of an enum based on a single variant.
 
 ```rust
-use schemars::schema_for_value;
+use schema_jsonrs::schema_for_value;
 use serde::Serialize;
 
 #[derive(Serialize)]
@@ -220,7 +212,7 @@ let schema = schema_for_value!(MyStruct {
     my_bool: true,
     my_nullable_enum: Some(MyEnum::StringNewType("foo".to_string()))
 });
-println!("{}", serde_json::to_string_pretty(&schema).unwrap());
+println!("{}", serde_jsonc2::to_string_pretty(&schema).unwrap());
 ```
 
 <details>
@@ -256,12 +248,12 @@ println!("{}", serde_json::to_string_pretty(&schema).unwrap());
 
 ## Feature Flags
 
-- `std` (enabled by default) - implements `JsonSchema` for types in the rust standard library (`JsonSchema` is still implemented on types in `core` and `alloc`, even when this feature is disabled). Disable this feature to use schemars in `no_std` environments.
+- `std` (enabled by default) - implements `JsonSchema` for types in the rust standard library (`JsonSchema` is still implemented on types in `core` and `alloc`, even when this feature is disabled). Disable this feature to use schema_jsonrs in `no_std` environments.
 - `derive` (enabled by default) - provides `#[derive(JsonSchema)]` macro
 - `preserve_order` - keep the order of struct fields in `Schema` properties
-- `raw_value` - implements `JsonSchema` for `serde_json::value::RawValue` (enables the serde_json `raw_value` feature)
+- `raw_value` - implements `JsonSchema` for `serde_jsonc2::value::RawValue` (enables the serde_json `raw_value` feature)
 
-Schemars can implement `JsonSchema` on types from several popular crates, enabled via feature flags (dependency versions are shown in brackets):
+SchemaJsonRs can implement `JsonSchema` on types from several popular crates, enabled via feature flags (dependency versions are shown in brackets):
 
 - `arrayvec07` - [arrayvec](https://crates.io/crates/arrayvec) (^0.7)
 - `bigdecimal04` - [bigdecimal](https://crates.io/crates/bigdecimal) (^0.4)
@@ -272,13 +264,13 @@ Schemars can implement `JsonSchema` on types from several popular crates, enable
 - `rust_decimal1` - [rust_decimal](https://crates.io/crates/rust_decimal) (^1.0)
 - `semver1` - [semver](https://crates.io/crates/semver) (^1.0.9)
 - `smallvec1` - [smallvec](https://crates.io/crates/smallvec) (^1.0)
-- `smol_str02` - [smol_str](https://crates.io/crates/smol_str) (^0.2.1)
+- `smol_str02` - [smol_str](https://crates.io/crates/smol_str) (^0.3.2)
 - `url2` - [url](https://crates.io/crates/url) (^2.0)
 - `uuid1` - [uuid](https://crates.io/crates/uuid) (^1.0)
 
-For example, to implement `JsonSchema` on types from `chrono`, enable it as a feature in the `schemars` dependency in your `Cargo.toml` like so:
+For example, to implement `JsonSchema` on types from `chrono`, enable it as a feature in the `schema_jsonrs` dependency in your `Cargo.toml` like so:
 
 ```toml
 [dependencies]
-schemars = { version = "1.0.0-alpha.17", features = ["chrono04"] }
+schema_jsonrs = { version = "0.1.0", features = ["chrono04"] }
 ```
